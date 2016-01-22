@@ -29,11 +29,12 @@ import (
 )
 
 type vxlanDeviceAttrs struct {
-	vni       uint32
-	name      string
-	vtepIndex int
-	vtepAddr  net.IP
-	vtepPort  int
+	vni         uint32
+	name        string
+	vtepIndex   int
+	vtepAddr    net.IP
+	vtepPort    int
+	vtepUDPCSum bool
 }
 
 type vxlanDevice struct {
@@ -60,6 +61,7 @@ func newVXLANDevice(devAttrs *vxlanDeviceAttrs) (*vxlanDevice, error) {
 		VtepDevIndex: devAttrs.vtepIndex,
 		SrcAddr:      devAttrs.vtepAddr,
 		Port:         devAttrs.vtepPort,
+		UDPCSum:      devAttrs.vtepUDPCSum,
 		Learning:     false,
 	}
 
@@ -282,6 +284,10 @@ func vxlanLinksIncompat(l1, l2 netlink.Link) string {
 		return fmt.Sprintf("l2miss: %v vs %v", v1.L2miss, v2.L2miss)
 	}
 
+	if v1.UDPCSum != v2.UDPCSum {
+		return fmt.Sprintf("udpcsum: %v vs %v", v1.UDPCSum, v2.UDPCSum)
+	}
+
 	if v1.Port > 0 && v2.Port > 0 && v1.Port != v2.Port {
 		return fmt.Sprintf("port: %v vs %v", v1.Port, v2.Port)
 	}
@@ -302,7 +308,7 @@ func setAddr4(link *netlink.Vxlan, ipn *net.IPNet) error {
 		}
 	}
 
-	addr := netlink.Addr{ipn, ""}
+	addr := netlink.Addr{IPNet: ipn, Label: ""}
 	if err = netlink.AddrAdd(link, &addr); err != nil {
 		return fmt.Errorf("failed to add IP address %s to %s: %s", ipn.String(), link.Attrs().Name, err)
 	}

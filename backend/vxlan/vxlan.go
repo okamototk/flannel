@@ -68,10 +68,12 @@ func (be *VXLANBackend) Run(ctx context.Context) {
 func (be *VXLANBackend) RegisterNetwork(ctx context.Context, network string, config *subnet.Config) (backend.Network, error) {
 	// Parse our configuration
 	cfg := struct {
-		VNI  int
-		Port int
+		VNI     int
+		Port    int
+                UDPCSum bool
 	}{
-		VNI: defaultVNI,
+		VNI:     defaultVNI,
+                UDPCSum: false,
 	}
 
 	if len(config.Backend) > 0 {
@@ -81,11 +83,12 @@ func (be *VXLANBackend) RegisterNetwork(ctx context.Context, network string, con
 	}
 
 	devAttrs := vxlanDeviceAttrs{
-		vni:       uint32(cfg.VNI),
-		name:      fmt.Sprintf("flannel.%v", cfg.VNI),
-		vtepIndex: be.extIface.Iface.Index,
-		vtepAddr:  be.extIface.IfaceAddr,
-		vtepPort:  cfg.Port,
+		vni:         uint32(cfg.VNI),
+		name:        fmt.Sprintf("flannel.%v", cfg.VNI),
+		vtepIndex:   be.extIface.Iface.Index,
+		vtepAddr:    be.extIface.IfaceAddr,
+		vtepPort:    cfg.Port,
+		vtepUDPCSum: cfg.UDPCSum,
 	}
 
 	dev, err := newVXLANDevice(&devAttrs)
